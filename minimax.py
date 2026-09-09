@@ -54,11 +54,12 @@ class Streak():
     '''
     Represents a continuous, uninterrupted streak (2, 3, 4, 5...) of tiles
     '''
-    def __init__(self, parent=None, members = None, open_end = True, open_start = True, style = None):
+    def __init__(self, parent=None, members = None, open_end = True, open_start = True, style = None, double_threat = False):
         self.parent = parent
         self.members = members
         self.open_end = open_end
         self.open_start = open_start
+        self.double_threat = double_threat
         self.style = style
 
         self.streak = len(members) + 1
@@ -110,6 +111,9 @@ def continuous_tiles(board, pos, ROW_COUNT, COL_COUNT, tile_registry):
                 members.append(new_tile)
             r += dr
             c += dc
+
+        if len(members) <= 2:
+            continue
         # If next tile is out of bounds or owned by opponent, mark as closed
         if 0 <= r < ROW_COUNT and 0 <= c < COL_COUNT:
             open_end =  board[r][c] != opponent
@@ -121,32 +125,56 @@ def continuous_tiles(board, pos, ROW_COUNT, COL_COUNT, tile_registry):
         else:
             open_start = False
 
-        if len(members) > 1:
-            new_streak = Streak(members[0], members, open_end, open_start, direction)
-            streaks.append(new_streak)
+        new_streak = Streak(members[0], members, open_end, open_start, direction)
+        streaks.append(new_streak)
             
-            for member in members:
-                tile_registry[(member.position[0], member.position[1])].streaks[direction] = new_streak
+        for member in members:
+            tile_registry[(member.position[0], member.position[1])].streaks[direction] = new_streak
 
+    if len(streaks) > 1:
+        fully_open = [s for s in streaks if s.open_end and s.open_start]
+        if len(fully_open) >= 2:
+            for s in fully_open:
+                s.double_threat = True
+        
     return streaks, tile_registry
 
 def calculate_scores(streaks, player):
     '''
     Calculate scores for a player based on their streaks
     '''
-    SCORE_2 = 2
     SCORE_3 = 15
-    SCORE_4 = 60
-    SCORE_5 = 1_000_000
-    OPEN_ENDS_4_SELF = 10_000
-    OPEN_ENDS_4_PLAYER = 100_000
+    SCORE_4 = 1500
+
+    OPEN_ENDS_4_SELF = 500_000
+    OPEN_ENDS_4_PLAYER = 800_000
+
+    DOUBLE_THREAT_3_SELF = 350_000
+    DOUBLE_THREAT_3_PLAYER = 500_000
+    DOUBLE_THREAT_4_SELF = 700_000
+    DOUBLE_THREAT_4_PLAYER = 1_000_000
+    SCORE_5 = 10_000_000
     score = 0
 
-    len_scoring = {1:0, 2:SCORE_2, 3:SCORE_3, 4:SCORE_4, 5:1_000_000, 6:1_000_000, 7:1_000_000, 8:1_000_000, 9:1_000_000, 10:1_000_000}
-    ends_multipliers = {(True, True): 3, (True, False): 1, (False, True): 1, (False, False): 0}
+    len_scoring = {3:SCORE_3, 4:SCORE_4, 5:SCORE_5, 6:10_000_000, 7:10_000_000, 8:10_000_000, 9:10_000_000, 10:10_000_000}
+    ends_multipliers = {(True, True): 10, (True, False): 1, (False, True): 1, (False, False): 0}
 
     for streak in streaks:
-        if streak.open_end and streak.open_start and len(streak.members) == 4:
+        if streak.double_threat:
+            if len(streak.members) == 3:
+                if player == 1:
+                    score += DOUBLE_THREAT_3_PLAYER
+                else:
+                    score += DOUBLE_THREAT_3_SELF
+            else:
+                if player == 1:
+                    score += DOUBLE_THREAT_4_PLAYER
+                else:
+                    score += DOUBLE_THREAT_4_SELF
+
+            print("Double threat")
+
+        elif streak.open_end and streak.open_start and len(streak.members) == 4:
             if player == 1:
                 score += OPEN_ENDS_4_PLAYER
             if player == 2:
