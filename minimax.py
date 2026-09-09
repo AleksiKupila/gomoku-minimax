@@ -130,20 +130,31 @@ def continuous_tiles(board, pos, ROW_COUNT, COL_COUNT, tile_registry):
 
     return streaks, tile_registry
 
-def calculate_scores(streaks):
+def calculate_scores(streaks, player):
     '''
     Calculate scores for a player based on their streaks
     '''
+    SCORE_2 = 2
+    SCORE_3 = 15
+    SCORE_4 = 60
+    SCORE_5 = 1_000_000
+    OPEN_ENDS_4_SELF = 10_000
+    OPEN_ENDS_4_PLAYER = 100_000
     score = 0
 
-    len_scoring = {1:0, 2:2, 3:15, 4:60, 5:1_000_000, 6:1_000_000, 7:1_000_000, 8:1_000_000, 9:1_000_000, 10:1_000_000}
+    len_scoring = {1:0, 2:SCORE_2, 3:SCORE_3, 4:SCORE_4, 5:1_000_000, 6:1_000_000, 7:1_000_000, 8:1_000_000, 9:1_000_000, 10:1_000_000}
     ends_multipliers = {(True, True): 3, (True, False): 1, (False, True): 1, (False, False): 0}
 
     for streak in streaks:
-
-        len_score = len_scoring[len(streak.members)]
-        ends_multiplier = ends_multipliers[streak.open_end, streak.open_start]
-        score += len_score*ends_multiplier
+        if streak.open_end and streak.open_start and len(streak.members) == 4:
+            if player == 1:
+                score += OPEN_ENDS_4_PLAYER
+            if player == 2:
+                score += OPEN_ENDS_4_SELF
+        else:
+            len_score = len_scoring[len(streak.members)]
+            ends_multiplier = ends_multipliers[streak.open_end, streak.open_start]
+            score += len_score*ends_multiplier
 
     return score
 
@@ -169,8 +180,8 @@ def evaluate(board, ROW_COUNT, COL_COUNT, all_moves):
             else:
                 ai_streaks.append(streak)
 
-    player_score = calculate_scores(player_streaks)
-    ai_score = calculate_scores(ai_streaks)
+    player_score = calculate_scores(player_streaks, 1)
+    ai_score = calculate_scores(ai_streaks, 2)
 
     return ai_score - player_score
 

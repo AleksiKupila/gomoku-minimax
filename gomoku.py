@@ -85,6 +85,7 @@ def play(alphabeta = False, depth = 3, performance_metrics = False, ROW_COUNT = 
                         print(f"Total marks played: {total_marks}")
                         game_over = True
                         player = 2
+                        all_moves = []
                         continue
                     else:
                         player = 1
@@ -93,6 +94,9 @@ def play(alphabeta = False, depth = 3, performance_metrics = False, ROW_COUNT = 
                 if (COL_COUNT * OUTER_SQUARE)- 200 < pos_x < (COL_COUNT * OUTER_SQUARE) - 25 and 25 < pos_y < 75:
                     board = create_board(ROW_COUNT, COL_COUNT)
                     game_over = False
+                    all_moves = []
+                    player = 1
+                    print(f"Game reset!\n")
 
             # fill the screen with a color to wipe away anything from last frame
             #screen.fill("purple")
