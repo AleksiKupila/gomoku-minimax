@@ -1,6 +1,8 @@
 import pygame as pg
 import math
 
+from utils.board_utils import *
+
 ROW_COUNT = 10
 COL_COUNT = 10
 
@@ -12,18 +14,6 @@ SQUARE_COLOR = (255,255,255)
 TITLE_COLOR = (0,0,0)
 P1_COLOR = (0,0,255)
 P2_COLOR = (255,0,0)
-
-def valid_location(board, row, col, player):
-    try:
-        if board[row][col] == 0:
-            return True
-        else:
-            print("Mark already in position!\n")
-            
-    except Exception as e:
-        print(f"Illegal move: {e}\n") 
-
-    return False
     
 def check_win(board, row, col, player, size=10, win_length = 5):
 
@@ -50,14 +40,6 @@ def check_win(board, row, col, player, size=10, win_length = 5):
             return True
 
     return False
-
-def create_board(rows, cols):
-    board = []
-    for r in range(rows):
-        board.append([])
-        for c in range(cols):
-            board[r].append(0)
-    return board
 
 def draw_board(board, screen):
     for r in range(ROW_COUNT):

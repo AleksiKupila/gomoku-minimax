@@ -3,6 +3,7 @@ import math
 from time import perf_counter
 
 from minimax import *
+from utils.board_utils import *
 
 ROW_COUNT = 10
 COL_COUNT = 10
@@ -17,15 +18,6 @@ P1_COLOR = (0,0,255)
 P2_COLOR = (255,0,0)
 
 DEPTH = 3
-
-
-def create_board(rows, cols):
-    board = []
-    for r in range(rows):
-        board.append([])
-        for c in range(cols):
-            board[r].append(0)
-    return board
 
 def draw_board(board, screen):
     for r in range(ROW_COUNT):
@@ -45,21 +37,24 @@ def draw_scoreboard(board, screen, player, game_over):
     pg.draw.rect(screen, BOARD_COLOR, (0,0,COL_COUNT*OUTER_SQUARE, OUTER_SQUARE))
     pg.draw.rect(screen, SQUARE_COLOR, ((COL_COUNT * OUTER_SQUARE)- 200, 25, 175, 50))
 
-    title_font = pg.font.SysFont("Arial", 30, True)
-    reset_text = title_font.render("RESET", True, BOARD_COLOR)
+    reset_font = pg.font.SysFont("Arial", 30, True)
+    status_font = pg.font.SysFont("Arial", 30, True)
+    reset_text = reset_font.render("RESET", True, BOARD_COLOR)
     screen.blit(reset_text, (((COL_COUNT * OUTER_SQUARE)- 160), 32))
 
     if player == 1:
         if game_over:
-            player_text = title_font.render("BLUE WON!", True, P1_COLOR)
+            status_font = pg.font.SysFont("Arial", 70, True)
+            player_text = status_font.render("BLUE WON!", True, P1_COLOR)
         else:
-            player_text = title_font.render("BLUE", True, P1_COLOR)
+            player_text = status_font.render("BLUE TURN", True, P1_COLOR)
         screen.blit(player_text, (0,0))
     else:
         if game_over:
-            player_text = title_font.render("RED WON!", True, P2_COLOR)
+            status_font = pg.font.SysFont("Arial", 70, True)
+            player_text = status_font.render("RED WON!", True, P2_COLOR)
         else:
-            player_text = title_font.render("RED", True, P2_COLOR)
+            player_text = status_font.render("RED TURN", True, P2_COLOR)
         screen.blit(player_text, (0,0))
 
 def play():
@@ -78,6 +73,8 @@ def play():
 
     game_over = False
     player = 1
+    all_moves = []
+    total_marks = 0
 
     while running:
         # poll for events
@@ -98,8 +95,11 @@ def play():
                     col = int(math.floor(pos_x/OUTER_SQUARE))
                     row = int(math.floor((pos_y/OUTER_SQUARE)-1))
 
-                    place_mark(board, (row, col), 1)
-                    print(f"Placed mark on {row, col}\n")
+                    if valid_location(board, row, col, 1):
+                        place_mark(board, (row, col), 1)
+                        all_moves.append((row, col))
+                        total_marks +=1
+                        print(f"Placed mark on {row, col}\n")
 
                     if check_win(board, row, col, 1):
                         print(f"Player wins!")
@@ -110,21 +110,24 @@ def play():
 
                     print("AI turn!")
                     start = perf_counter()
-                    best, best_move = minimax(board, DEPTH, ROW_COUNT, COL_COUNT)
+                    best, best_move = minimax(board, all_moves, DEPTH, ROW_COUNT, COL_COUNT)
                     total = perf_counter() - start
                     print(f"Total algorithm time: {total}")
 
                     place_mark(board, best_move, 2)
+                    all_moves.append(best_move)
+                    total_marks +=1
                     print(f"AI placed mark on {best_move}\n")
 
                     if check_win(board, best_move[0], best_move[1], 2):
                         print(f"AI wins!")
+                        print(f"Total marks played: {total_marks}")
                         game_over = True
                         player = 2
                         continue
                     else:
                         player = 1
-                        
+
                 # Click inside reset button
                 if (COL_COUNT * OUTER_SQUARE)- 200 < pos_x < (COL_COUNT * OUTER_SQUARE) - 25 and 25 < pos_y < 75:
                     board = create_board(ROW_COUNT, COL_COUNT)
