@@ -1,4 +1,5 @@
 from math import inf
+from time import perf_counter
 
 def valid_location(board, row, col, player):
     try:
@@ -167,7 +168,7 @@ def continuous_tiles(board, pos, ROW_COUNT, COL_COUNT, tile_registry):
 
 def calculate_scores(streaks):
     score = 0
-    len_scoring = {1:0, 2:2, 3:6, 4:60, 5:1_000_000}
+    len_scoring = {1:0, 2:2, 3:6, 4:60, 5:1_000_000, 6:1_000_000, 7:1_000_000, 8:1_000_000, 9:1_000_000, 10:1_000_000}
     ends_multipliers = {(True, True): 3, (True, False): 1, (False, True): 1, (False, False): 0}
 
     for streak in streaks:
@@ -203,33 +204,54 @@ def evaluate(board, ROW_COUNT, COL_COUNT):
     return ai_score - player_score
 
 
-def minimax(board, depth, ROW_COUNT, COL_COUNT, maximizing = True, move = None):
+def minimax(board, depth, ROW_COUNT, COL_COUNT, maximizing = True, move = None, alpha = -inf, beta = inf):
 
     if move:
-        if depth == 0 or check_win(board, move[0], move[1], 2):
+        just_moved = 1 if maximizing else 2
+        if depth == 0 or check_win(board, move[0], move[1], just_moved):
             return evaluate(board, ROW_COUNT, COL_COUNT), move
 
     if maximizing:
-        best = -inf
-        goat_move = None
+        max_score = -inf
+        best_move = None
         candidates = get_candidates(board, ROW_COUNT, COL_COUNT)
+
         for move in candidates:
             board = place_mark(board, move, 2)
-            score, best_move = minimax(board, depth - 1, ROW_COUNT, COL_COUNT, False, move)
+            score, child_move = minimax(board, depth - 1, ROW_COUNT, COL_COUNT, False, move, alpha, beta)
             board = remove_mark(board, move)
-            if score > best:
-                best = score
-                goat_move = best_move
-        return best, goat_move
+
+            if score > max_score:
+                max_score = score
+                best_move = move
+
+            alpha = max(alpha, score)
+
+            if alpha >= beta:
+                break
+
+        return max_score, best_move
             
     else:
-        best = inf
+        min_score = inf
+        best_move = None
         candidates = get_candidates(board, ROW_COUNT, COL_COUNT)
+
         for move in candidates:
             board = place_mark(board, move, 1)
-            score, best_move = minimax(board, depth - 1, ROW_COUNT, COL_COUNT, True, move)
+            score, child_move = minimax(board, depth - 1, ROW_COUNT, COL_COUNT, True, move, alpha, beta)
             board = remove_mark(board, move)
-            if score > best:
-                best = score
-        return best, best_move
+
+            if score < min_score:
+                min_score = score
+                best_move = move
+
+            beta = min(beta, score)
+
+            if alpha >= beta:
+                break
+
+        return min_score, best_move
+
+
         

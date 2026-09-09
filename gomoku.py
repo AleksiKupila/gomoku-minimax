@@ -1,5 +1,6 @@
 import pygame as pg
 import math
+from time import perf_counter
 
 from minimax import *
 
@@ -87,36 +88,52 @@ def play():
 
             
             if event.type == pg.MOUSEBUTTONDOWN:
+
                 # Click x/y
                 pos_x = event.pos[0]
                 pos_y = event.pos[1]
-                # Click inside board
+                        # Click inside board
                 if pos_y > OUTER_SQUARE and not game_over: 
+                    print(f"Player turn!")
                     col = int(math.floor(pos_x/OUTER_SQUARE))
                     row = int(math.floor((pos_y/OUTER_SQUARE)-1))
 
-                    place_mark(board, (row, col), player)
+                    place_mark(board, (row, col), 1)
+                    print(f"Placed mark on {row, col}\n")
 
-                    if check_win(board, row, col, player):
-                        print(f"Player {player} wins!")
+                    if check_win(board, row, col, 1):
+                        print(f"Player wins!")
                         game_over = True
+                        player = 1
+                        continue
 
+
+                    print("AI turn!")
+                    start = perf_counter()
                     best, best_move = minimax(board, DEPTH, ROW_COUNT, COL_COUNT)
+                    total = perf_counter() - start
+                    print(f"Total algorithm time: {total}")
+
                     place_mark(board, best_move, 2)
+                    print(f"AI placed mark on {best_move}\n")
 
-                    #print(f"Board: {board}")
-                    candidates = get_candidates(board, ROW_COUNT, COL_COUNT)
-                    #count = continuous_tiles(board, (row, col), ROW_COUNT, COL_COUNT)
-
+                    if check_win(board, best_move[0], best_move[1], 2):
+                        print(f"AI wins!")
+                        game_over = True
+                        player = 2
+                        continue
+                    else:
+                        player = 1
+                        
                 # Click inside reset button
-                elif (COL_COUNT * OUTER_SQUARE)- 200 < pos_x < (COL_COUNT * OUTER_SQUARE) - 25 and 25 < pos_y < 75:
+                if (COL_COUNT * OUTER_SQUARE)- 200 < pos_x < (COL_COUNT * OUTER_SQUARE) - 25 and 25 < pos_y < 75:
                     board = create_board(ROW_COUNT, COL_COUNT)
                     game_over = False
-                    player = 1
+
             # fill the screen with a color to wipe away anything from last frame
             #screen.fill("purple")
-            
-        # RENDER YOUR GAME HERE
+
+
         draw_board(board, screen)
         draw_scoreboard(board, screen, player, game_over)
         # flip() the display to put your work on screen
