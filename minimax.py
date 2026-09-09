@@ -3,7 +3,7 @@ from time import perf_counter
 from utils.board_utils import *
 
 
-def check_win(board, row, col, player, size=10, win_length = 5):
+def check_win(board, row, col, player, rows = 10, cols = 10, win_length = 5):
 
     directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
 
@@ -12,14 +12,14 @@ def check_win(board, row, col, player, size=10, win_length = 5):
 
         # walk forward
         r, c = row + dr, col + dc
-        while 0 <= r < size and 0 <= c < size and board[r][c] == player:
+        while 0 <= r < rows and 0 <= c < cols and board[r][c] == player:
             count += 1
             r += dr
             c += dc
 
         # walk backward
         r, c = row - dr, col - dc
-        while 0 <= r < size and 0 <= c < size and board[r][c] == player:
+        while 0 <= r < rows and 0 <= c < cols and board[r][c] == player:
             count += 1
             r -= dr
             c -= dc
@@ -46,16 +46,16 @@ def get_candidates(board, all_moves, ROW_COUNT, COL_COUNT):
         for tile in nearby_tiles:
             candidate = (r + tile[0], c + tile[1])
 
+            # Make sure not in list already
+            if candidate in candidates:
+                continue
+
             # Make sure within range
             if candidate[0] > ROW_COUNT - 1 or candidate[0] < 0 or candidate[1] > COL_COUNT - 1 or candidate[1] < 0:
                 continue 
 
             # Make sure is empty
             if board[candidate[0]][candidate[1]] != 0:
-                continue
-
-            # Make sure not in list already
-            if candidate in candidates:
                 continue
 
             candidates.append(candidate)
@@ -186,12 +186,11 @@ def evaluate(board, ROW_COUNT, COL_COUNT, all_moves):
 
     return ai_score - player_score
 
-
-def minimax(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True, move = None, alpha = -inf, beta = inf):
+def minimax(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True, move = None):
 
     if move:
         just_moved = 1 if maximizing else 2
-        if depth == 0 or check_win(board, move[0], move[1], just_moved):
+        if depth == 0 or check_win(board, move[0], move[1], just_moved, ROW_COUNT, COL_COUNT):
             return evaluate(board, ROW_COUNT, COL_COUNT, all_moves), move
 
     if maximizing:
@@ -202,7 +201,51 @@ def minimax(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True, mo
         for move in candidates:
             board = place_mark(board, move, 2)
             all_moves.append(move)
-            score, child_move = minimax(board, all_moves, depth - 1, ROW_COUNT, COL_COUNT, False, move, alpha, beta)
+            score, child_move = minimax(board, all_moves, depth - 1, ROW_COUNT, COL_COUNT, False, move)
+            board = remove_mark(board, move)
+            all_moves.pop()
+
+            if score > max_score:
+                max_score = score
+                best_move = move
+
+        return max_score, best_move
+            
+    else:
+        min_score = inf
+        best_move = None
+        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT)
+
+        for move in candidates:
+            board = place_mark(board, move, 1)
+            all_moves.append(move)
+            score, child_move = minimax(board, all_moves, depth - 1, ROW_COUNT, COL_COUNT, True, move)
+            board = remove_mark(board, move)
+            all_moves.pop()
+
+            if score < min_score:
+                min_score = score
+                best_move = move
+
+        return min_score, best_move
+
+    
+def alpha_beta(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True, move = None, alpha = -inf, beta = inf):
+
+    if move:
+        just_moved = 1 if maximizing else 2
+        if depth == 0 or check_win(board, move[0], move[1], just_moved, ROW_COUNT, COL_COUNT):
+            return evaluate(board, ROW_COUNT, COL_COUNT, all_moves), move
+
+    if maximizing:
+        max_score = -inf
+        best_move = None
+        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT)
+
+        for move in candidates:
+            board = place_mark(board, move, 2)
+            all_moves.append(move)
+            score, child_move = alpha_beta(board, all_moves, depth - 1, ROW_COUNT, COL_COUNT, False, move, alpha, beta)
             board = remove_mark(board, move)
             all_moves.pop()
 
@@ -224,7 +267,7 @@ def minimax(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True, mo
         for move in candidates:
             board = place_mark(board, move, 1)
             all_moves.append(move)
-            score, child_move = minimax(board, all_moves, depth - 1, ROW_COUNT, COL_COUNT, True, move, alpha, beta)
+            score, child_move = alpha_beta(board, all_moves, depth - 1, ROW_COUNT, COL_COUNT, True, move, alpha, beta)
             board = remove_mark(board, move)
             all_moves.pop()
 

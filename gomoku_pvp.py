@@ -109,19 +109,21 @@ def play():
                 if pos_y > OUTER_SQUARE and not game_over: 
                     col = int(math.floor(pos_x/OUTER_SQUARE))
                     row = int(math.floor((pos_y/OUTER_SQUARE)-1))
+                    print(f"Player {player} turn!")
 
                     if valid_location(board, row, col, player):
                         board[row][col] = player
+                        print(f"Placed mark on {row, col}\n")
 
                     if check_win(board, row, col, player):
-                        print(f"Player {player} wins!")
+                        print(f"Player {player} wins!\n")
                         game_over = True
 
                     elif player == 1:
                         player = 2
                     else: player = 1
                         
-                    print(f"Board: {board}")
+                    #print(f"Board: {board}")
 
                 # Click inside reset button
                 elif (COL_COUNT * OUTER_SQUARE)- 200 < pos_x < (COL_COUNT * OUTER_SQUARE) - 25 and 25 < pos_y < 75:
@@ -140,6 +142,3 @@ def play():
         clock.tick(60)  # limits FPS to 60
 
     pg.quit()
-        
-
-play()

@@ -5,9 +5,6 @@ from time import perf_counter
 from minimax import *
 from utils.board_utils import *
 
-ROW_COUNT = 10
-COL_COUNT = 10
-
 OUTER_SQUARE = 100
 RADIUS =  30
 
@@ -19,7 +16,7 @@ P2_COLOR = (255,0,0)
 
 DEPTH = 3
 
-def draw_board(board, screen):
+def draw_board(board, screen, ROW_COUNT, COL_COUNT):
     for r in range(ROW_COUNT):
         for c in range(COL_COUNT):
             # Board background
@@ -33,7 +30,7 @@ def draw_board(board, screen):
             elif board[r][c] == 2:
                 pg.draw.circle(screen, P2_COLOR, (c*OUTER_SQUARE + 0.5*OUTER_SQUARE, (r*OUTER_SQUARE + 0.5*OUTER_SQUARE) + OUTER_SQUARE), RADIUS)       
 
-def draw_scoreboard(board, screen, player, game_over):
+def draw_scoreboard(board, screen, player, game_over, ROW_COUNT, COL_COUNT):
     pg.draw.rect(screen, BOARD_COLOR, (0,0,COL_COUNT*OUTER_SQUARE, OUTER_SQUARE))
     pg.draw.rect(screen, SQUARE_COLOR, ((COL_COUNT * OUTER_SQUARE)- 200, 25, 175, 50))
 
@@ -57,7 +54,7 @@ def draw_scoreboard(board, screen, player, game_over):
             player_text = status_font.render("RED TURN", True, P2_COLOR)
         screen.blit(player_text, (0,0))
 
-def play():
+def play(alphabeta = False, depth = 3, performance_metrics = False, ROW_COUNT = 10, COL_COUNT = 10):
 
     pg.init()
     # Screen size
@@ -101,7 +98,7 @@ def play():
                         total_marks +=1
                         print(f"Placed mark on {row, col}\n")
 
-                    if check_win(board, row, col, 1):
+                    if check_win(board, row, col, 1, ROW_COUNT, COL_COUNT):
                         print(f"Player wins!")
                         game_over = True
                         player = 1
@@ -109,17 +106,21 @@ def play():
 
 
                     print("AI turn!")
-                    start = perf_counter()
-                    best, best_move = minimax(board, all_moves, DEPTH, ROW_COUNT, COL_COUNT)
-                    total = perf_counter() - start
-                    print(f"Total algorithm time: {total}")
+                    if performance_metrics: start = perf_counter()
+
+                    if alphabeta: best, best_move = alpha_beta(board, all_moves, depth, ROW_COUNT, COL_COUNT)
+                    else: best, best_move = minimax(board, all_moves, depth, ROW_COUNT, COL_COUNT)
+
+                    if performance_metrics: 
+                        total = perf_counter() - start
+                        print(f"Total algorithm time: {total}")
 
                     place_mark(board, best_move, 2)
                     all_moves.append(best_move)
                     total_marks +=1
                     print(f"AI placed mark on {best_move}\n")
 
-                    if check_win(board, best_move[0], best_move[1], 2):
+                    if check_win(board, best_move[0], best_move[1], 2, ROW_COUNT, COL_COUNT):
                         print(f"AI wins!")
                         print(f"Total marks played: {total_marks}")
                         game_over = True
@@ -137,14 +138,11 @@ def play():
             #screen.fill("purple")
 
 
-        draw_board(board, screen)
-        draw_scoreboard(board, screen, player, game_over)
+        draw_board(board, screen, ROW_COUNT, COL_COUNT)
+        draw_scoreboard(board, screen, player, game_over, ROW_COUNT, COL_COUNT)
         # flip() the display to put your work on screen
         pg.display.flip()
 
         clock.tick(60)  # limits FPS to 60
 
     pg.quit()
-        
-
-play()
