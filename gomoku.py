@@ -14,46 +14,6 @@ TITLE_COLOR = (0,0,0)
 P1_COLOR = (0,0,255)
 P2_COLOR = (255,0,0)
 
-DEPTH = 3
-
-def draw_board(board, screen, ROW_COUNT, COL_COUNT):
-    for r in range(ROW_COUNT):
-        for c in range(COL_COUNT):
-            # Board background
-            pg.draw.rect(screen, BOARD_COLOR, (c*OUTER_SQUARE, r*OUTER_SQUARE+ OUTER_SQUARE, OUTER_SQUARE, OUTER_SQUARE))
-            # Board squares
-            pg.draw.rect(screen, SQUARE_COLOR, (c*OUTER_SQUARE + 5, r*OUTER_SQUARE + OUTER_SQUARE + 5, OUTER_SQUARE- 10, OUTER_SQUARE - 10))
-            # Player 1
-            if board[r][c] == 1:
-                pg.draw.circle(screen, P1_COLOR, (c*OUTER_SQUARE + 0.5*OUTER_SQUARE, (r*OUTER_SQUARE + 0.5*OUTER_SQUARE) + OUTER_SQUARE) , RADIUS)
-            # Player 2
-            elif board[r][c] == 2:
-                pg.draw.circle(screen, P2_COLOR, (c*OUTER_SQUARE + 0.5*OUTER_SQUARE, (r*OUTER_SQUARE + 0.5*OUTER_SQUARE) + OUTER_SQUARE), RADIUS)       
-
-def draw_scoreboard(board, screen, player, game_over, ROW_COUNT, COL_COUNT):
-    pg.draw.rect(screen, BOARD_COLOR, (0,0,COL_COUNT*OUTER_SQUARE, OUTER_SQUARE))
-    pg.draw.rect(screen, SQUARE_COLOR, ((COL_COUNT * OUTER_SQUARE)- 200, 25, 175, 50))
-
-    reset_font = pg.font.SysFont("Arial", 30, True)
-    status_font = pg.font.SysFont("Arial", 30, True)
-    reset_text = reset_font.render("RESET", True, BOARD_COLOR)
-    screen.blit(reset_text, (((COL_COUNT * OUTER_SQUARE)- 160), 32))
-
-    if player == 1:
-        if game_over:
-            status_font = pg.font.SysFont("Arial", 70, True)
-            player_text = status_font.render("BLUE WON!", True, P1_COLOR)
-        else:
-            player_text = status_font.render("BLUE TURN", True, P1_COLOR)
-        screen.blit(player_text, (0,0))
-    else:
-        if game_over:
-            status_font = pg.font.SysFont("Arial", 70, True)
-            player_text = status_font.render("RED WON!", True, P2_COLOR)
-        else:
-            player_text = status_font.render("RED TURN", True, P2_COLOR)
-        screen.blit(player_text, (0,0))
-
 def play(alphabeta = False, depth = 3, performance_metrics = False, ROW_COUNT = 10, COL_COUNT = 10):
 
     pg.init()
@@ -138,8 +98,8 @@ def play(alphabeta = False, depth = 3, performance_metrics = False, ROW_COUNT = 
             #screen.fill("purple")
 
 
-        draw_board(board, screen, ROW_COUNT, COL_COUNT)
-        draw_scoreboard(board, screen, player, game_over, ROW_COUNT, COL_COUNT)
+        draw_board(pg, board, screen, ROW_COUNT, COL_COUNT)
+        draw_scoreboard(pg, board, screen, player, game_over, ROW_COUNT, COL_COUNT)
         # flip() the display to put your work on screen
         pg.display.flip()
 

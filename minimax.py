@@ -2,36 +2,10 @@ from math import inf
 from time import perf_counter
 from utils.board_utils import *
 
-
-def check_win(board, row, col, player, rows = 10, cols = 10, win_length = 5):
-
-    directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
-
-    for dr, dc in directions:
-        count = 1 
-
-        # walk forward
-        r, c = row + dr, col + dc
-        while 0 <= r < rows and 0 <= c < cols and board[r][c] == player:
-            count += 1
-            r += dr
-            c += dc
-
-        # walk backward
-        r, c = row - dr, col - dc
-        while 0 <= r < rows and 0 <= c < cols and board[r][c] == player:
-            count += 1
-            r -= dr
-            c -= dc
-
-        if count >= win_length:
-            return True
-
-    return False
-
-
 def get_candidates(board, all_moves, ROW_COUNT, COL_COUNT):
-
+    '''
+    Get all free neighboring tiles of a tile
+    '''
     # Adjacent tiles within 1 tile
     nearby_tiles = [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, 1), (1, -1)]
     candidates = []
@@ -65,6 +39,9 @@ def get_candidates(board, all_moves, ROW_COUNT, COL_COUNT):
     return candidates
 
 class Tile():
+    '''
+    Represents a single tile on board
+    '''
     def __init__(self, position=None, owner=None):
         self.position = position
         self.owner = owner
@@ -74,6 +51,9 @@ class Tile():
         return  self.position < other.position
     
 class Streak():
+    '''
+    Represents a continuous, uninterrupted streak (2, 3, 4, 5...) of tiles
+    '''
     def __init__(self, parent=None, members = None, open_end = True, open_start = True, style = None):
         self.parent = parent
         self.members = members
@@ -84,7 +64,9 @@ class Streak():
         self.streak = len(members) + 1
 
 def continuous_tiles(board, pos, ROW_COUNT, COL_COUNT, tile_registry):
-
+    '''
+    Checks streaks the current tile is connected to
+    '''
     def get_tile(r, c, owner):
         if (r, c) not in tile_registry:
             tile_registry[(r, c)] = Tile((r, c), owner)
@@ -149,6 +131,9 @@ def continuous_tiles(board, pos, ROW_COUNT, COL_COUNT, tile_registry):
     return streaks, tile_registry
 
 def calculate_scores(streaks):
+    '''
+    Calculate scores for a player based on their streaks
+    '''
     score = 0
 
     len_scoring = {1:0, 2:2, 3:15, 4:60, 5:1_000_000, 6:1_000_000, 7:1_000_000, 8:1_000_000, 9:1_000_000, 10:1_000_000}
@@ -163,6 +148,9 @@ def calculate_scores(streaks):
     return score
 
 def evaluate(board, ROW_COUNT, COL_COUNT, all_moves):
+    '''
+    Evaluate the situation on board by checking streaks of both players, and scoring them.
+    '''
     ai_streaks = []
     player_streaks = []
 
@@ -187,7 +175,9 @@ def evaluate(board, ROW_COUNT, COL_COUNT, all_moves):
     return ai_score - player_score
 
 def minimax(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True, move = None):
-
+    '''
+    Default, unoptimized minimax algorithm
+    '''
     if move:
         just_moved = 1 if maximizing else 2
         if depth == 0 or check_win(board, move[0], move[1], just_moved, ROW_COUNT, COL_COUNT):
@@ -231,7 +221,9 @@ def minimax(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True, mo
 
     
 def alpha_beta(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True, move = None, alpha = -inf, beta = inf):
-
+    '''
+    Minimax algorithm using alpha-beta pruning
+    '''
     if move:
         just_moved = 1 if maximizing else 2
         if depth == 0 or check_win(board, move[0], move[1], just_moved, ROW_COUNT, COL_COUNT):
