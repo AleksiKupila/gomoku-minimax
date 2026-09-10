@@ -171,48 +171,48 @@ def calculate_scores(streaks, player):
     '''
     Calculate scores for a player based on their streaks
     '''
-    SCORE_3 = 15
-    SCORE_4 = 1500
 
-    OPEN_ENDS_4_SELF = 500_000
-    OPEN_ENDS_4_PLAYER = 600_000
+    OWN_WEIGHT = 1
+    BLOCK_WEIGHT = 1.2
 
-    DOUBLE_THREAT_3_SELF = 400_000
-    DOUBLE_THREAT_3_PLAYER = 500_000
-    DOUBLE_THREAT_4_SELF = 700_000
-    DOUBLE_THREAT_4_PLAYER = 800_000
+    SCORE_3 = 1000
+    SCORE_4 = 100_000
+
+    OPEN_ENDS_4 = 500_000
+    OPEN_ENDS_4 = 600_000
+
+    DOUBLE_THREAT_3 = 300_000
+    DOUBLE_THREAT_4 = 700_000
+
     SCORE_5 = 10_000_000
     score = 0
 
     len_scoring = {3:SCORE_3, 4:SCORE_4, 5:SCORE_5, 6:10_000_000, 7:10_000_000, 8:10_000_000, 9:10_000_000, 10:10_000_000}
     ends_multipliers = {(True, True): 10, (True, False): 1, (False, True): 1, (False, False): 0}
 
+    if player == 1:
+        weight = BLOCK_WEIGHT
+    else:
+        weight = OWN_WEIGHT
+
     for streak in streaks:
         if streak.double_threat:
             if len(streak.members) == 3:
-                if player == 1:
-                    score += DOUBLE_THREAT_3_PLAYER
-                else:
-                    score += DOUBLE_THREAT_3_SELF
+
+                score += DOUBLE_THREAT_3 * weight
             else:
-                if player == 1:
-                    score += DOUBLE_THREAT_4_PLAYER
-                else:
-                    score += DOUBLE_THREAT_4_SELF
+                score += DOUBLE_THREAT_4 * weight
 
         elif streak.open_end and streak.open_start and len(streak.members) == 4:
-            if player == 1:
-                score += OPEN_ENDS_4_PLAYER
-            if player == 2:
-                score += OPEN_ENDS_4_SELF
-        elif len(streak.members) >= 5:
-            score += len_scoring[len(streak.members)]
+
+            score += OPEN_ENDS_4 * weight
+
         else:
-            len_score = len_scoring[len(streak.members)]
+            len_score = len_scoring[len(streak.members)] * weight
             ends_multiplier = ends_multipliers[streak.open_end, streak.open_start]
             score += len_score*ends_multiplier
 
-    return score
+    return int(score)
 
 def evaluate(board, ROW_COUNT, COL_COUNT, all_moves):
     '''

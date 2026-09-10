@@ -2,6 +2,7 @@ import pygame as pg
 import math
 
 from utils.board_utils import *
+from minimax import *
 
 ROW_COUNT = 10
 COL_COUNT = 10
@@ -92,6 +93,7 @@ def play():
 
     game_over = False
     player = 1
+    all_moves = []
 
     while running:
         # poll for events
@@ -113,6 +115,7 @@ def play():
 
                     if valid_location(board, row, col, player):
                         board[row][col] = player
+                        all_moves.append((row, col))
                         print(f"Placed mark on {row, col}\n")
 
                     if check_win(board, row, col, player):
@@ -122,14 +125,16 @@ def play():
                     elif player == 1:
                         player = 2
                     else: player = 1
-                        
-                    #print(f"Board: {board}")
+
+                    print(len(all_moves))
+                    print(evaluate(board, ROW_COUNT, COL_COUNT, all_moves))
 
                 # Click inside reset button
                 elif (COL_COUNT * OUTER_SQUARE)- 200 < pos_x < (COL_COUNT * OUTER_SQUARE) - 25 and 25 < pos_y < 75:
                     board = create_board(ROW_COUNT, COL_COUNT)
                     game_over = False
                     player = 1
+                    all_moves = []
             # fill the screen with a color to wipe away anything from last frame
             #screen.fill("purple")
             
