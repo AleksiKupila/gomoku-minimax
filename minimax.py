@@ -2,7 +2,7 @@ from math import inf
 from time import perf_counter
 from utils.board_utils import *
 
-def get_candidates(board, all_moves, ROW_COUNT, COL_COUNT):
+def get_candidates(board, all_moves, ROW_COUNT, COL_COUNT, player, opponent):
     '''
     Get all free neighboring tiles of a tile
     '''
@@ -25,7 +25,7 @@ def get_candidates(board, all_moves, ROW_COUNT, COL_COUNT):
                 continue
 
             # Make sure within range
-            if candidate[0] > ROW_COUNT - 1 or candidate[0] < 0 or candidate[1] > COL_COUNT - 1 or candidate[1] < 0:
+            if candidate[0] >= ROW_COUNT or candidate[0] < 0 or candidate[1] >= COL_COUNT or candidate[1] < 0:
                 continue 
 
             # Make sure is empty
@@ -33,9 +33,7 @@ def get_candidates(board, all_moves, ROW_COUNT, COL_COUNT):
                 continue
 
             candidates.append(candidate)
-
-    #print(f"candidates: {len(candidates)}")
-    #print(candidates)
+    candidates = order_candidates(board, candidates, player, opponent, ROW_COUNT, COL_COUNT)
     return candidates
 
 class Tile():
@@ -63,6 +61,38 @@ class Streak():
         self.style = style
 
         self.streak = len(members) + 1
+
+def order_candidates(board, candidates, player, opponent, rows, cols):
+
+    OWN_WEIGHT = 1.0
+    BLOCK_WEIGHT = 1.2
+
+    nearby_tiles = [
+        (0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, 1), (1, -1),
+        (0, -2), (0, 2), (-2, 0), (2, 0), (-2, -2), (-2, 2), (2, 2), (2, -2)
+    ]
+    scored = []
+    score = 0
+
+    for (r, c) in candidates:
+
+        for dr, dc in nearby_tiles:
+            nr = r + dr
+            nc = c + dc
+            if 0 <= nr < rows and 0 <= nc < cols:
+                if board[nr][nc] == player:
+                    score +=OWN_WEIGHT
+                elif board[nr][nc] == opponent:
+                    score +=BLOCK_WEIGHT
+
+        scored.append(((r, c), score))
+        score = 0
+
+    scored.sort(key=lambda x:x[1], reverse=True)
+
+    return [move for move, _ in scored]
+        
+
 
 def continuous_tiles(board, pos, ROW_COUNT, COL_COUNT, tile_registry):
     '''
@@ -99,8 +129,11 @@ def continuous_tiles(board, pos, ROW_COUNT, COL_COUNT, tile_registry):
         # If the tile behind this tile belongs to the player, skip
         back_r, back_c = row - dr, col - dc
         if 0 <= back_r < ROW_COUNT and 0 <= back_c < COL_COUNT:
+            open_start = board[back_r][back_c] != opponent
             if board[back_r][back_c] == player:
                 continue
+        else:
+            open_start = False
 
         members = [start_tile]
         # walk forward
@@ -119,11 +152,6 @@ def continuous_tiles(board, pos, ROW_COUNT, COL_COUNT, tile_registry):
             open_end =  board[r][c] != opponent
         else:
             open_end = False
-
-        if 0 <= back_r < ROW_COUNT and 0 <= back_c < COL_COUNT:
-            open_start = board[back_r][back_c] != opponent
-        else:
-            open_start = False
 
         new_streak = Streak(members[0], members, open_end, open_start, direction)
         streaks.append(new_streak)
@@ -147,12 +175,12 @@ def calculate_scores(streaks, player):
     SCORE_4 = 1500
 
     OPEN_ENDS_4_SELF = 500_000
-    OPEN_ENDS_4_PLAYER = 800_000
+    OPEN_ENDS_4_PLAYER = 600_000
 
-    DOUBLE_THREAT_3_SELF = 350_000
+    DOUBLE_THREAT_3_SELF = 400_000
     DOUBLE_THREAT_3_PLAYER = 500_000
     DOUBLE_THREAT_4_SELF = 700_000
-    DOUBLE_THREAT_4_PLAYER = 1_000_000
+    DOUBLE_THREAT_4_PLAYER = 800_000
     SCORE_5 = 10_000_000
     score = 0
 
@@ -172,13 +200,13 @@ def calculate_scores(streaks, player):
                 else:
                     score += DOUBLE_THREAT_4_SELF
 
-            print("Double threat")
-
         elif streak.open_end and streak.open_start and len(streak.members) == 4:
             if player == 1:
                 score += OPEN_ENDS_4_PLAYER
             if player == 2:
                 score += OPEN_ENDS_4_SELF
+        elif len(streak.members) >= 5:
+            score += len_scoring[len(streak.members)]
         else:
             len_score = len_scoring[len(streak.members)]
             ends_multiplier = ends_multipliers[streak.open_end, streak.open_start]
@@ -225,7 +253,7 @@ def minimax(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True, mo
     if maximizing:
         max_score = -inf
         best_move = None
-        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT)
+        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT, 2, 1)
 
         for move in candidates:
             board = place_mark(board, move, 2)
@@ -243,7 +271,7 @@ def minimax(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True, mo
     else:
         min_score = inf
         best_move = None
-        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT)
+        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT, 1, 2)
 
         for move in candidates:
             board = place_mark(board, move, 1)
@@ -271,7 +299,7 @@ def alpha_beta(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True,
     if maximizing:
         max_score = -inf
         best_move = None
-        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT)
+        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT, 2, 1)
 
         for move in candidates:
             board = place_mark(board, move, 2)
@@ -293,7 +321,7 @@ def alpha_beta(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True,
     else:
         min_score = inf
         best_move = None
-        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT)
+        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT, 1, 2)
 
         for move in candidates:
             board = place_mark(board, move, 1)

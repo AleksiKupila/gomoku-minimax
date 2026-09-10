@@ -1,6 +1,7 @@
 import pygame as pg
 import math
 from time import perf_counter
+from statistics import mean
 
 from minimax import *
 from utils.board_utils import *
@@ -31,6 +32,7 @@ def play(alphabeta = False, depth = 3, performance_metrics = False, ROW_COUNT = 
     game_over = False
     player = 1
     all_moves = []
+    all_times = []
     total_marks = 0
 
     while running:
@@ -66,7 +68,9 @@ def play(alphabeta = False, depth = 3, performance_metrics = False, ROW_COUNT = 
 
 
                     print("AI turn!")
-                    if performance_metrics: start = perf_counter()
+                    if performance_metrics: 
+                        total = 0
+                        start = perf_counter()
 
                     if alphabeta: best, best_move = alpha_beta(board, all_moves, depth, ROW_COUNT, COL_COUNT)
                     else: best, best_move = minimax(board, all_moves, depth, ROW_COUNT, COL_COUNT)
@@ -74,6 +78,7 @@ def play(alphabeta = False, depth = 3, performance_metrics = False, ROW_COUNT = 
                     if performance_metrics: 
                         total = perf_counter() - start
                         print(f"Total algorithm time: {total}")
+                        all_times.append(total)
 
                     place_mark(board, best_move, 2)
                     all_moves.append(best_move)
@@ -83,9 +88,13 @@ def play(alphabeta = False, depth = 3, performance_metrics = False, ROW_COUNT = 
                     if check_win(board, best_move[0], best_move[1], 2, ROW_COUNT, COL_COUNT):
                         print(f"AI wins!")
                         print(f"Total marks played: {total_marks}")
+                        if performance_metrics:
+                            print(f"Average algorithm time: {mean(all_times)}")
+
                         game_over = True
                         player = 2
                         all_moves = []
+                        all_times = []
                         continue
                     else:
                         player = 1
