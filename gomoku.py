@@ -15,7 +15,7 @@ TITLE_COLOR = (0,0,0)
 P1_COLOR = (0,0,255)
 P2_COLOR = (255,0,0)
 
-def play(alphabeta = False, depth = 3, performance_metrics = False, ROW_COUNT = 10, COL_COUNT = 10):
+def play(alphabeta = False, depth = 3, performance_metrics = False, ROW_COUNT = 10, COL_COUNT = 10, move_ordering = False):
 
     pg.init()
     # Screen size
@@ -72,8 +72,8 @@ def play(alphabeta = False, depth = 3, performance_metrics = False, ROW_COUNT = 
                         total = 0
                         start = perf_counter()
 
-                    if alphabeta: best, best_move = alpha_beta(board, all_moves, depth, ROW_COUNT, COL_COUNT)
-                    else: best, best_move = minimax(board, all_moves, depth, ROW_COUNT, COL_COUNT)
+                    if alphabeta: best, best_move = alpha_beta(board, all_moves, depth, ROW_COUNT, COL_COUNT, move_ordering)
+                    else: best, best_move = minimax(board, all_moves, depth, ROW_COUNT, COL_COUNT, move_ordering)
 
                     if performance_metrics: 
                         total = perf_counter() - start

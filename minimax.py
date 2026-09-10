@@ -2,7 +2,7 @@ from math import inf
 from time import perf_counter
 from utils.board_utils import *
 
-def get_candidates(board, all_moves, ROW_COUNT, COL_COUNT, player, opponent):
+def get_candidates(board, all_moves, ROW_COUNT, COL_COUNT, player, opponent, move_ordering):
     '''
     Get all free neighboring tiles of a tile
     '''
@@ -10,9 +10,7 @@ def get_candidates(board, all_moves, ROW_COUNT, COL_COUNT, player, opponent):
     nearby_tiles = [(0, -1), (0, 1), (-1, 0), (1, 0), (-1, -1), (-1, 1), (1, 1), (1, -1)]
     candidates = []
 
-    for move in all_moves:
-        r = move[0]
-        c = move[1]
+    for (r,c) in all_moves:
 
         if board[r][c] == 0:
             continue
@@ -33,7 +31,10 @@ def get_candidates(board, all_moves, ROW_COUNT, COL_COUNT, player, opponent):
                 continue
 
             candidates.append(candidate)
-    candidates = order_candidates(board, candidates, player, opponent, ROW_COUNT, COL_COUNT)
+
+    if move_ordering:
+        candidates = order_candidates(board, candidates, player, opponent, ROW_COUNT, COL_COUNT)
+
     return candidates
 
 class Tile():
@@ -175,16 +176,15 @@ def calculate_scores(streaks, player):
     OWN_WEIGHT = 1
     BLOCK_WEIGHT = 1.2
 
-    SCORE_3 = 1000
-    SCORE_4 = 100_000
+    SCORE_3 = 100
+    SCORE_4 = 1000
 
-    OPEN_ENDS_4 = 500_000
-    OPEN_ENDS_4 = 600_000
+    OPEN_ENDS_4 = 5000
 
-    DOUBLE_THREAT_3 = 300_000
-    DOUBLE_THREAT_4 = 700_000
+    DOUBLE_THREAT_3 = 3000
+    DOUBLE_THREAT_4 = 7000
 
-    SCORE_5 = 10_000_000
+    SCORE_5 = 100_000_000
     score = 0
 
     len_scoring = {3:SCORE_3, 4:SCORE_4, 5:SCORE_5, 6:10_000_000, 7:10_000_000, 8:10_000_000, 9:10_000_000, 10:10_000_000}
@@ -196,8 +196,14 @@ def calculate_scores(streaks, player):
         weight = OWN_WEIGHT
 
     for streak in streaks:
+        length = len(streak.members)
+        
+        if length >= 5:
+            score += SCORE_5 * weight 
+            continue
+
         if streak.double_threat:
-            if len(streak.members) == 3:
+            if length == 3:
 
                 score += DOUBLE_THREAT_3 * weight
             else:
@@ -241,24 +247,24 @@ def evaluate(board, ROW_COUNT, COL_COUNT, all_moves):
 
     return ai_score - player_score
 
-def minimax(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True, move = None):
+def minimax(board, all_moves, depth, ROW_COUNT, COL_COUNT, move_ordering = False, maximizing = True, move = None):
     '''
     Default, unoptimized minimax algorithm
     '''
     if move:
         just_moved = 1 if maximizing else 2
-        if depth == 0 or check_win(board, move[0], move[1], just_moved, ROW_COUNT, COL_COUNT):
+        if check_win(board, move[0], move[1], just_moved, ROW_COUNT, COL_COUNT):
+            win_score = 100_000_000 + depth
+            return (win_score if just_moved == 2 else -win_score), move
+        
+        if depth == 0:
             return evaluate(board, ROW_COUNT, COL_COUNT, all_moves), move
 
     if maximizing:
-        max_score = -inf
-        best_move = None
-        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT, 2, 1)
-
         for move in candidates:
             board = place_mark(board, move, 2)
             all_moves.append(move)
-            score, child_move = minimax(board, all_moves, depth - 1, ROW_COUNT, COL_COUNT, False, move)
+            score, child_move = minimax(board, all_moves, depth - 1, ROW_COUNT, COL_COUNT, move_ordering, False, move)
             board = remove_mark(board, move)
             all_moves.pop()
 
@@ -271,12 +277,12 @@ def minimax(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True, mo
     else:
         min_score = inf
         best_move = None
-        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT, 1, 2)
+        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT, 1, 2, move_ordering)
 
         for move in candidates:
             board = place_mark(board, move, 1)
             all_moves.append(move)
-            score, child_move = minimax(board, all_moves, depth - 1, ROW_COUNT, COL_COUNT, True, move)
+            score, child_move = minimax(board, all_moves, depth - 1, ROW_COUNT, COL_COUNT, move_ordering, True, move)
             board = remove_mark(board, move)
             all_moves.pop()
 
@@ -287,24 +293,23 @@ def minimax(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True, mo
         return min_score, best_move
 
     
-def alpha_beta(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True, move = None, alpha = -inf, beta = inf):
+def alpha_beta(board, all_moves, depth, ROW_COUNT, COL_COUNT, move_ordering = False, maximizing = True, move = None, alpha = -inf, beta = inf):
     '''
     Minimax algorithm using alpha-beta pruning
     '''
     if move:
-        just_moved = 1 if maximizing else 2
-        if depth == 0 or check_win(board, move[0], move[1], just_moved, ROW_COUNT, COL_COUNT):
+        if depth == 0:
             return evaluate(board, ROW_COUNT, COL_COUNT, all_moves), move
 
     if maximizing:
         max_score = -inf
         best_move = None
-        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT, 2, 1)
+        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT, 2, 1, move_ordering)
 
         for move in candidates:
             board = place_mark(board, move, 2)
             all_moves.append(move)
-            score, child_move = alpha_beta(board, all_moves, depth - 1, ROW_COUNT, COL_COUNT, False, move, alpha, beta)
+            score, child_move = alpha_beta(board, all_moves, depth - 1, ROW_COUNT, COL_COUNT, move_ordering, False, move, alpha, beta)
             board = remove_mark(board, move)
             all_moves.pop()
 
@@ -321,12 +326,12 @@ def alpha_beta(board, all_moves, depth, ROW_COUNT, COL_COUNT, maximizing = True,
     else:
         min_score = inf
         best_move = None
-        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT, 1, 2)
+        candidates = get_candidates(board, all_moves, ROW_COUNT, COL_COUNT, 1, 2, move_ordering)
 
         for move in candidates:
             board = place_mark(board, move, 1)
             all_moves.append(move)
-            score, child_move = alpha_beta(board, all_moves, depth - 1, ROW_COUNT, COL_COUNT, True, move, alpha, beta)
+            score, child_move = alpha_beta(board, all_moves, depth - 1, ROW_COUNT, COL_COUNT, move_ordering, True, move, alpha, beta)
             board = remove_mark(board, move)
             all_moves.pop()
 
